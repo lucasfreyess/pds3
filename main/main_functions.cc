@@ -22,7 +22,6 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
-#include "tensorflow/lite/schema/schema_generated.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -31,8 +30,7 @@ limitations under the License.
 #include <esp_timer.h>
 #include <esp_log.h>
 #include "esp_main.h"
-#include "esp_psram.h"
-
+// #include "esp_psram.h"
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -48,35 +46,36 @@ namespace {
   // signed value.
 
   #ifdef CONFIG_IDF_TARGET_ESP32S3
-  constexpr int scratchBufSize = 40 * 1024;
+    constexpr int scratchBufSize = 40 * 1024;
   #else
-  constexpr int scratchBufSize = 0;
+    constexpr int scratchBufSize = 0;
   #endif
-  
-  // An area of memory to use for input, output, and intermediate arrays.
-  // quizas haya que modificar esta linea!!! depende del ttiempo 
-  //constexpr int kTensorArenaSize = 81 * 1024 + scratchBufSize;
-  constexpr int kTensorArenaSize = 96 * 96 * 100 * sizeof(uint) + 1935000;
-  //constexpr int kTensorArenaSize = 5621400;
-  static uint8_t *tensor_arena;//[kTensorArenaSize]; // Maybe we should move this to external
+    // An area of memory to use for input, output, and intermediate arrays.
+    //constexpr int kTensorArenaSize = 81 * 1024 + scratchBufSize;
+    constexpr int kTensorArenaSize = (96 * 96 * sizeof(uint)) + 330000;
+    static uint8_t *tensor_arena;//[kTensorArenaSize]; // Maybe we should move this to external
 }  // namespace
 
 // The name of this function is important for Arduino compatibility.
 void setup() {
-  // Initialize PSRAM
-  if (esp_psram_get_size() == 0) {
-    printf("PSRAM not found\n");
-    return;
-  }
+
+  // if (esp_psram_get_size() == 0) {
+  //   printf("PSRAM not found\n");
+  //   return;
+  // }
 
   printf("Total heap size: %d\n", heap_caps_get_total_size(MALLOC_CAP_8BIT));
   printf("Free heap size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-  printf("Total PSRAM size: %d\n", esp_psram_get_size());
-  printf("Free PSRAM size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+  // printf("Total PSRAM size: %d\n", esp_psram_get_size());
+  // printf("Free PSRAM size: %d\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
   model = tflite::GetModel(g_person_detect_model_data);
+  if (model == nullptr) {
+    printf("Error: No se pudo cargar el modelo.\n");
+    return;
+  }
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     MicroPrintf("Model provided is schema version %d not equal to supported "
                 "version %d.", model->version(), TFLITE_SCHEMA_VERSION);
@@ -89,7 +88,7 @@ void setup() {
     tensor_arena = (uint8_t *) heap_caps_malloc(kTensorArenaSize, MALLOC_CAP_SPIRAM);
   }
   if (tensor_arena == NULL) {
-    printf("MIRAMEEEE OLAAAAA MIRAMEEEECouldn't allocate memory of %d bytes\n", kTensorArenaSize);
+    printf("Couldn't allocate memory of %d bytes\n", kTensorArenaSize);
     return;
   }
 
@@ -101,15 +100,14 @@ void setup() {
   //
   // tflite::AllOpsResolver resolver;
   // NOLINTNEXTLINE(runtime-global-variables)
-  static tflite::MicroMutableOpResolver<6> micro_op_resolver;
-  micro_op_resolver.AddConv2D();
-  micro_op_resolver.AddMaxPool2D();        // Add for MaxPooling2D
-  micro_op_resolver.AddFullyConnected();   // Add for Dense layers
-  micro_op_resolver.AddAveragePool2D();
-  micro_op_resolver.AddReshape();
-  micro_op_resolver.AddSoftmax();
-  micro_op_resolver.AddQuantize();
-  
+    static tflite::MicroMutableOpResolver<6> micro_op_resolver;
+    micro_op_resolver.AddConv2D();
+    micro_op_resolver.AddMaxPool2D();
+    micro_op_resolver.AddFullyConnected();
+    micro_op_resolver.AddReshape();
+    micro_op_resolver.AddSoftmax();
+    micro_op_resolver.AddQuantize();
+
   // Build an interpreter to run the model with.
   // NOLINTNEXTLINE(runtime-global-variables)
   static tflite::MicroInterpreter static_interpreter(model, micro_op_resolver, tensor_arena, kTensorArenaSize);
@@ -124,6 +122,11 @@ void setup() {
 
   // Get information about the memory area to use for the model's input.
   input = interpreter->input(0);
+  if (input == nullptr) {
+    printf("Error: No se pudo obtener el tensor de entrada.\n");
+    return;
+  }
+
 
 #ifndef CLI_ONLY_INFERENCE
   // Initialize Camera
@@ -143,34 +146,21 @@ void loop() {
     MicroPrintf("Image capture failed.");
   }
 
-  //for (int i = 0; i < 96 * 96; i++) {
-      //printf("%.6f, ", input->data.f[i]);
-  //}
-
   // Run the model on this input and make sure it succeeds.
   if (kTfLiteOk != interpreter->Invoke()) {
     MicroPrintf("Invoke failed.");
   }
 
-  // Process the inference results.
-  //int8_t person_score = output->data.uint8[kPersonIndex];
-  //int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
-
-  //float person_score_f =
-  //    (person_score - output->params.zero_point) * output->params.scale;
-  //float no_person_score_f =
-  //    (no_person_score - output->params.zero_point) * output->params.scale;
-
   TfLiteTensor* output = interpreter->output(0);
-  float gesture_scores[kCategoryCount];
+  float gestures_scores[kCategoryCount];
 
   for (int i = 0; i < kCategoryCount; i++) {
-    gesture_scores[i] = output->data.uint8[i];
+    gestures_scores[i] = output->data.uint8[i];
   }
 
-  // Respond to detection
-  RespondToDetection(gesture_scores);
+  RespondToDetection(gestures_scores);
   vTaskDelay(1); // to avoid watchdog trigger
+
 }
 #endif
 
@@ -187,11 +177,10 @@ void loop() {
 #endif
 
 void run_inference(void *ptr) {
-  
-  // VER ESTO SI ES QUE PORCENTAJES ESTAN NOTABLEMENTE MALOS....
+
   /* Convert from uint8 picture data to int8 */
   for (int i = 0; i < kNumCols * kNumRows; i++) {
-    input->data.int8[i] = ((uint8_t *) ptr)[i];
+    input->data.uint8[i] = ((uint8_t *) ptr)[i];
   }
 
 #if defined(COLLECT_CPU_STATS)
@@ -205,13 +194,13 @@ void run_inference(void *ptr) {
 #if defined(COLLECT_CPU_STATS)
   long long total_time = (esp_timer_get_time() - start_time);
   printf("Total time = %lld\n", total_time / 1000);
-  //printf("Softmax time = %lld\n", softmax_total_time / 1000);
-  //printf("FC time = %lld\n", fc_total_time / 1000);
-  //printf("DC time = %lld\n", dc_total_time / 1000);
-  //printf("conv time = %lld\n", conv_total_time / 1000);
-  //printf("Pooling time = %lld\n", pooling_total_time / 1000);
-  //printf("add time = %lld\n", add_total_time / 1000);
-  //printf("mul time = %lld\n", mul_total_time / 1000);
+  printf("Softmax time = %lld\n", softmax_total_time / 1000);
+  printf("FC time = %lld\n", fc_total_time / 1000);
+  printf("DC time = %lld\n", dc_total_time / 1000);
+  printf("conv time = %lld\n", conv_total_time / 1000);
+  printf("Pooling time = %lld\n", pooling_total_time / 1000);
+  printf("add time = %lld\n", add_total_time / 1000);
+  printf("mul time = %lld\n", mul_total_time / 1000);
 
   /* Reset times */
   total_time = 0;
@@ -224,29 +213,26 @@ void run_inference(void *ptr) {
   mul_total_time = 0;
 #endif
 
-  // Process the inference results.
-  /*
-  int8_t person_score = output->data.uint8[kPersonIndex];
-  int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
-
-  float person_score_f =
-      (person_score - output->params.zero_point) * output->params.scale;
-  float no_person_score_f =
-      (no_person_score - output->params.zero_point) * output->params.scale;
-  RespondToDetection(person_score_f, no_person_score_f);
-  */
-
   TfLiteTensor* output = interpreter->output(0);
-  float gesture_scores[kCategoryCount];
+
+  // // Process the inference results.
+  // int8_t person_score = output->data.uint8[kPersonIndex];
+  // int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
+
+  // float person_score_f = (person_score - output->params.zero_point) * output->params.scale;
+  // float no_person_score_f = (no_person_score - output->params.zero_point) * output->params.scale;
+  // RespondToDetection(person_score_f, no_person_score_f);
+
+  float gestures_scores[kCategoryCount];
 
   printf("Input type: %s\n", TfLiteTypeGetName(input->type));
   printf("Output type: %s\n", TfLiteTypeGetName(output->type));
 
-
   for (int i = 0; i < kCategoryCount; i++) {
-    gesture_scores[i] = output->data.uint8[i];
+    gestures_scores[i] = output->data.uint8[i];
   }
 
-  RespondToDetection(gesture_scores);
+  RespondToDetection(gestures_scores);
   vTaskDelay(8000 / portTICK_PERIOD_MS); // to avoid watchdog trigger
+
 }

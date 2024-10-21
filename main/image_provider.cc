@@ -117,12 +117,6 @@ TfLiteStatus GetImage(int image_width, int image_height, int channels, uint8_t* 
   for (int i = 0; i < image_width * image_height; i++) {
     image_data[i] = ((uint8_t *) fb->buf)[i];
   }
-  //for (int i = 0; i < image_width * image_height; i++) {
-    // Convert the uint8_t pixel to float32
-  //  float pixel = static_cast<float>(((uint8_t *) fb->buf)[i]);
-    // Normalize the pixel data to 0-1 range if your model expects this range
-  //  image_data[i] = pixel / 255.0f;
-  //}
 #endif // DISPLAY_SUPPORT
 
   esp_camera_fb_return(fb);

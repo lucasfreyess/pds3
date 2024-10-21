@@ -14,5 +14,5 @@ idf_component_register(
         "app_camera_esp.c"
         "esp_cli.c"
 
-    PRIV_REQUIRES console static_images spi_flash esp_psram
+    PRIV_REQUIRES console static_images spi_flash
     INCLUDE_DIRS "")

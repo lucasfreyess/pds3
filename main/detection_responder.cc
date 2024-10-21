@@ -24,7 +24,7 @@ limitations under the License.
 #include "model_settings.h"
 
 #include "esp_main.h"
-// no hay display support asi q no preocuparse....
+
 #if DISPLAY_SUPPORT
 #include "image_provider.h"
 #include "bsp/esp-bsp.h"
@@ -60,42 +60,35 @@ static void create_gui(void)
 }
 #endif // DISPLAY_SUPPORT
 
-void RespondToDetection(float* gesture_score) {
+void RespondToDetection(float* gesture_scores) {
   float max_score = 0;
-  int max_score_index = 0;
-  for (int i = 0; i < kCategoryCount; i++) {
-    if (gesture_score[i] > max_score) {
-      max_score = gesture_score[i];
-      max_score_index = i;
+  int gesture_index = 0;
+  for (int i = 0; i < kCategoryCount; ++i) {
+    if (gesture_scores[i] > max_score) {
+      max_score = gesture_scores[i];
+      gesture_index = i;
     }
   }
-#if DISPLAY_SUPPORT
-    if (!camera_canvas) {
-      create_gui();
-    }
+//   (void) no_person_score; // unused
+// #if DISPLAY_SUPPORT
+//     if (!camera_canvas) {
+//       create_gui();
+//     }
 
-    uint16_t *buf = (uint16_t *) image_provider_get_display_buf();
+//     uint16_t *buf = (uint16_t *) image_provider_get_display_buf();
 
-    bsp_display_lock(0);
-    if (person_score_int < 60) { // treat score less than 60% as no person
-      lv_led_off(person_indicator);
-    } else {
-      lv_led_on(person_indicator);
-    }
-    lv_canvas_set_buffer(camera_canvas, buf, IMG_WD, IMG_HT, LV_IMG_CF_TRUE_COLOR);
-    bsp_display_unlock();
-#endif // DISPLAY_SUPPORT
-
-  //for (int i = 0; i < kNumCols * kNumRows; i++) {
-  //  printf("%f, ", image[i]);
-  //}
-
-  // Log the detected gesture.
-  MicroPrintf("Detected gesture: %s", kCategoryLabels[max_score_index]);
-  
-
-  // Print the scores of each gesture
+//     bsp_display_lock(0);
+//     if (person_score_int < 60) { // treat score less than 60% as no person
+//       lv_led_off(person_indicator);
+//     } else {
+//       lv_led_on(person_indicator);
+//     }
+//     lv_canvas_set_buffer(camera_canvas, buf, IMG_WD, IMG_HT, LV_IMG_CF_TRUE_COLOR);
+//     bsp_display_unlock();
+// #endif // DISPLAY_SUPPORT
+  MicroPrintf("Detected gesture: %s", kCategoryLabels[gesture_index]);
   for (int i = 0; i < kCategoryCount; i++) {
-    MicroPrintf("%s: %f", kCategoryLabels[i], gesture_score[i]);
+    MicroPrintf("Gesture %s score: %d", kCategoryLabels[i], gesture_scores[i]);
   }
+
 }

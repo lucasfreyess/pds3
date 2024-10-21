@@ -1,6 +1,17 @@
 # ignore build
 build/
 
-# ignore quant_model_v4.cc and tflite
-quant_model_v4.cc
+# ignore datasets
+# datasets/
+ds*
+*zip
+
+# ignore models
 *.tflite
+*.keras
+
+# ignore virtual environment
+venv/
+
+# ignore vscode settings
+.vscode/

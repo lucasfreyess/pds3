@@ -18,9 +18,9 @@ limitations under the License.
 const char* kCategoryLabels[kCategoryCount] = {
     "1",
     "10",
-    "2"
+    "2",
     "3",
     "4",
-    "5"
-    "Blank"
+    "5",
+    "Blank",
 };

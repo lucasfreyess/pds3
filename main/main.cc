@@ -22,7 +22,7 @@ limitations under the License.
 #include "esp_main.h"
 
 #if CLI_ONLY_INFERENCE
-#include "esp_cli.h"
+  #include "esp_cli.h"
 #endif
 
 void tf_main(void) {
