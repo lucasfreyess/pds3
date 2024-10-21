@@ -1,0 +1,6 @@
+# ignore build
+build/
+
+# ignore quant_model_v4.cc and tflite
+quant_model_v4.cc
+*.tflite
