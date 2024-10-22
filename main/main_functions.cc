@@ -22,6 +22,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/schema/schema_generated.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -152,14 +153,26 @@ void loop() {
   }
 
   TfLiteTensor* output = interpreter->output(0);
-  float gestures_scores[kCategoryCount];
+  
+  // Process the inference results.
+  int8_t k1_score = output->data.uint8[k1Index];
+  int8_t k10_score = output->data.uint8[k10Index];
+  int8_t k2_score = output->data.uint8[k2Index];
+  int8_t k3_score = output->data.uint8[k3Index];
+  int8_t k4_score = output->data.uint8[k4Index];
+  int8_t k5_score = output->data.uint8[k5Index];
+  int8_t kBlank_score = output->data.uint8[kBlankIndex];
 
-  for (int i = 0; i < kCategoryCount; i++) {
-    gestures_scores[i] = output->data.uint8[i];
-  }
+  float k1_score_f = (k1_score - output->params.zero_point) * output->params.scale;
+  float k10_score_f = (k10_score - output->params.zero_point) * output->params.scale;
+  float k2_score_f = (k2_score - output->params.zero_point) * output->params.scale;
+  float k3_score_f = (k3_score - output->params.zero_point) * output->params.scale;
+  float k4_score_f = (k4_score - output->params.zero_point) * output->params.scale;
+  float k5_score_f = (k5_score - output->params.zero_point) * output->params.scale;
+  float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
-  RespondToDetection(gestures_scores);
-  vTaskDelay(1); // to avoid watchdog trigger
+  RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
+  vTaskDelay(pdMS_TO_TICKS(2000)); // to avoid watchdog trigger
 
 }
 #endif
@@ -223,16 +236,23 @@ void run_inference(void *ptr) {
   // float no_person_score_f = (no_person_score - output->params.zero_point) * output->params.scale;
   // RespondToDetection(person_score_f, no_person_score_f);
 
-  float gestures_scores[kCategoryCount];
+  int8_t k1_score = output->data.uint8[k1Index];
+  int8_t k10_score = output->data.uint8[k10Index];
+  int8_t k2_score = output->data.uint8[k2Index];
+  int8_t k3_score = output->data.uint8[k3Index];
+  int8_t k4_score = output->data.uint8[k4Index];
+  int8_t k5_score = output->data.uint8[k5Index];
+  int8_t kBlank_score = output->data.uint8[kBlankIndex];
 
-  printf("Input type: %s\n", TfLiteTypeGetName(input->type));
-  printf("Output type: %s\n", TfLiteTypeGetName(output->type));
+  float k1_score_f = (k1_score - output->params.zero_point) * output->params.scale;
+  float k10_score_f = (k10_score - output->params.zero_point) * output->params.scale;
+  float k2_score_f = (k2_score - output->params.zero_point) * output->params.scale;
+  float k3_score_f = (k3_score - output->params.zero_point) * output->params.scale;
+  float k4_score_f = (k4_score - output->params.zero_point) * output->params.scale;
+  float k5_score_f = (k5_score - output->params.zero_point) * output->params.scale;
+  float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
-  for (int i = 0; i < kCategoryCount; i++) {
-    gestures_scores[i] = output->data.uint8[i];
-  }
-
-  RespondToDetection(gestures_scores);
-  vTaskDelay(8000 / portTICK_PERIOD_MS); // to avoid watchdog trigger
+  RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
+  // vTaskDelay(8000 / portTICK_PERIOD_MS); // to avoid watchdog trigger
 
 }

@@ -60,35 +60,28 @@ static void create_gui(void)
 }
 #endif // DISPLAY_SUPPORT
 
-void RespondToDetection(float* gesture_scores) {
-  float max_score = 0;
-  int gesture_index = 0;
-  for (int i = 0; i < kCategoryCount; ++i) {
-    if (gesture_scores[i] > max_score) {
-      max_score = gesture_scores[i];
-      gesture_index = i;
+void RespondToDetection(float k1_score, float k10_score, float k2_score, float k3_score, float k4_score, float k5_score, float kBlank_score) {
+  
+  int k1_score_int = (k1_score) * 100 + 0.5;
+  int k10_score_int = (k10_score) * 100 + 0.5;
+  int k2_score_int = (k2_score) * 100 + 0.5;
+  int k3_score_int = (k3_score) * 100 + 0.5;
+  int k4_score_int = (k4_score) * 100 + 0.5;
+  int k5_score_int = (k5_score) * 100 + 0.5;
+  int kBlank_score_int = (kBlank_score) * 100 + 0.5;
+
+  int max_score = k1_score_int;
+  int max_index = 1;
+  int scores[kCategoryCount - 1] = {k10_score_int, k2_score_int, k3_score_int, k4_score_int, k5_score_int, kBlank_score_int};
+  for (int i = 0; i < kCategoryCount - 1; i++) {
+    if (scores[i] > max_score) {
+      max_score = scores[i];
+      max_index = i + 1;
     }
   }
-//   (void) no_person_score; // unused
-// #if DISPLAY_SUPPORT
-//     if (!camera_canvas) {
-//       create_gui();
-//     }
-
-//     uint16_t *buf = (uint16_t *) image_provider_get_display_buf();
-
-//     bsp_display_lock(0);
-//     if (person_score_int < 60) { // treat score less than 60% as no person
-//       lv_led_off(person_indicator);
-//     } else {
-//       lv_led_on(person_indicator);
-//     }
-//     lv_canvas_set_buffer(camera_canvas, buf, IMG_WD, IMG_HT, LV_IMG_CF_TRUE_COLOR);
-//     bsp_display_unlock();
-// #endif // DISPLAY_SUPPORT
-  MicroPrintf("Detected gesture: %s", kCategoryLabels[gesture_index]);
-  for (int i = 0; i < kCategoryCount; i++) {
-    MicroPrintf("Gesture %s score: %d", kCategoryLabels[i], gesture_scores[i]);
-  }
+  
+  MicroPrintf("MAX SCORE: %d%% (Class: %s)", max_score, kCategoryLabels[max_index]);
+  MicroPrintf("SCORES:\n     1: %f%%\n    10: %f%%\n     2: %f%%\n     3: %f%%\n     4: %f%%\n     5: %f%%\n Blank: %f%%\n\n",
+              k1_score_int, k10_score_int, k2_score_int, k3_score_int, k4_score_int, k5_score_int, kBlank_score_int);
 
 }
