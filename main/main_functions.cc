@@ -155,13 +155,13 @@ void loop() {
   TfLiteTensor* output = interpreter->output(0);
   
   // Process the inference results.
-  int8_t k1_score = output->data.uint8[k1Index];
-  int8_t k10_score = output->data.uint8[k10Index];
-  int8_t k2_score = output->data.uint8[k2Index];
-  int8_t k3_score = output->data.uint8[k3Index];
-  int8_t k4_score = output->data.uint8[k4Index];
-  int8_t k5_score = output->data.uint8[k5Index];
-  int8_t kBlank_score = output->data.uint8[kBlankIndex];
+  int k1_score = output->data.uint8[k1Index];
+  int k10_score = output->data.uint8[k10Index];
+  int k2_score = output->data.uint8[k2Index];
+  int k3_score = output->data.uint8[k3Index];
+  int k4_score = output->data.uint8[k4Index];
+  int k5_score = output->data.uint8[k5Index];
+  int kBlank_score = output->data.uint8[kBlankIndex];
 
   float k1_score_f = (k1_score - output->params.zero_point) * output->params.scale;
   float k10_score_f = (k10_score - output->params.zero_point) * output->params.scale;
@@ -236,13 +236,13 @@ void run_inference(void *ptr) {
   // float no_person_score_f = (no_person_score - output->params.zero_point) * output->params.scale;
   // RespondToDetection(person_score_f, no_person_score_f);
 
-  int8_t k1_score = output->data.uint8[k1Index];
-  int8_t k10_score = output->data.uint8[k10Index];
-  int8_t k2_score = output->data.uint8[k2Index];
-  int8_t k3_score = output->data.uint8[k3Index];
-  int8_t k4_score = output->data.uint8[k4Index];
-  int8_t k5_score = output->data.uint8[k5Index];
-  int8_t kBlank_score = output->data.uint8[kBlankIndex];
+  int k1_score = output->data.uint8[k1Index];
+  int k10_score = output->data.uint8[k10Index];
+  int k2_score = output->data.uint8[k2Index];
+  int k3_score = output->data.uint8[k3Index];
+  int k4_score = output->data.uint8[k4Index];
+  int k5_score = output->data.uint8[k5Index];
+  int kBlank_score = output->data.uint8[kBlankIndex];
 
   float k1_score_f = (k1_score - output->params.zero_point) * output->params.scale;
   float k10_score_f = (k10_score - output->params.zero_point) * output->params.scale;
