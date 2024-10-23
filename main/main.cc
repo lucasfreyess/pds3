@@ -18,6 +18,7 @@ limitations under the License.
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "uart_communication.h"
 
 #include "esp_main.h"
 
@@ -26,15 +27,17 @@ limitations under the License.
 #endif
 
 void tf_main(void) {
-  setup();
-#if CLI_ONLY_INFERENCE
-  esp_cli_start();
-  vTaskDelay(portMAX_DELAY);
-#else
-  while (true) {
-    loop();
-  }
-#endif
+
+  setup();  
+  uart_init();
+  #if CLI_ONLY_INFERENCE
+    esp_cli_start();
+    vTaskDelay(portMAX_DELAY);
+  #else
+    while (true) {
+      loop();
+    }
+  #endif
 }
 
 extern "C" void app_main() {

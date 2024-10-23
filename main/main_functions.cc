@@ -13,24 +13,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "main_functions.h"
-
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+#include "tensorflow/lite/micro/micro_log.h"
+#include "person_detect_model_data.h"
 #include "detection_responder.h"
+#include "main_functions.h"
 #include "image_provider.h"
 #include "model_settings.h"
-#include "person_detect_model_data.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/micro/micro_log.h"
-#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
-#include "tensorflow/lite/schema/schema_generated.h"
+#include "esp_main.h"
 
+#include "uart_communication.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
+#include "sdkconfig.h"
+#include "esp_log.h"
 
 #include <esp_heap_caps.h>
+#include <esp_system.h>
 #include <esp_timer.h>
-#include <esp_log.h>
-#include "esp_main.h"
+#include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#define LED_PIN GPIO_NUM_4
+
 // #include "esp_psram.h"
 
 // Globals, used for compatibility with Arduino-style sketches.
@@ -59,11 +69,14 @@ namespace {
 
 // The name of this function is important for Arduino compatibility.
 void setup() {
-
   // if (esp_psram_get_size() == 0) {
   //   printf("PSRAM not found\n");
   //   return;
   // }
+
+  esp_rom_gpio_pad_select_gpio(LED_PIN);
+  gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+  gpio_set_level(LED_PIN, 0);
 
   printf("Total heap size: %d\n", heap_caps_get_total_size(MALLOC_CAP_8BIT));
   printf("Free heap size: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
@@ -85,8 +98,8 @@ void setup() {
 
   // Allocate tensor arena in PSRAM
   if (tensor_arena == NULL) {
-    tensor_arena = (uint8_t *) heap_caps_malloc(kTensorArenaSize, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    //tensor_arena = (uint8_t *) heap_caps_malloc(kTensorArenaSize, MALLOC_CAP_SPIRAM);
+    //tensor_arena = (uint8_t *) heap_caps_malloc(kTensorArenaSize, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    tensor_arena = (uint8_t *) heap_caps_malloc(kTensorArenaSize, MALLOC_CAP_SPIRAM);
   }
   if (tensor_arena == NULL) {
     printf("Couldn't allocate memory of %d bytes\n", kTensorArenaSize);
@@ -172,8 +185,11 @@ void loop() {
   float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
   RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
-  vTaskDelay(pdMS_TO_TICKS(2000)); // to avoid watchdog trigger
 
+  // Aquí puedes agregar el código para encender el LED
+  // gpio_set_level(LED_PIN, 1); // Encender el LED
+  vTaskDelay(pdMS_TO_TICKS(10)); // Espera 1000 ms (1 segundo)
+  // gpio_set_level(LED_PIN, 0); // Apagar el LED
 }
 #endif
 
@@ -253,6 +269,7 @@ void run_inference(void *ptr) {
   float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
   RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
-  // vTaskDelay(8000 / portTICK_PERIOD_MS); // to avoid watchdog trigger
+  // //vTaskDelay(8000 / portTICK_PERIOD_MS); // to avoid watchdog trigger
 
 }
+
