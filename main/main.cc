@@ -29,7 +29,7 @@ limitations under the License.
 void tf_main(void) {
 
   setup();  
-  uart_init();
+  //uart_init();
   #if CLI_ONLY_INFERENCE
     esp_cli_start();
     vTaskDelay(portMAX_DELAY);
