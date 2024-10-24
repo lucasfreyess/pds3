@@ -45,9 +45,10 @@ limitations under the License.
 #define RX_INPUT_SIZE 1024
 #define UART_PORT_NUM UART_NUM_2
 #define NUM_INFERENCES 4
+#define BUF_SIZE 1024
 
-int inference_count = 0;
-char detected_gestures[NUM_INFERENCES][20]; // almacena los labels de las detecciones mas prevalentes
+//int inference_count = 0;
+//char detected_gestures[NUM_INFERENCES][20]; // almacena los labels de las detecciones mas prevalentes
 //int detected_scores[NUM_INFERENCES];        // almacena los scores correspondientes
 
 // Globals, used for compatibility with Arduino-style sketches.
@@ -166,18 +167,37 @@ void setup() { // SETUP
 // The name of this function is important for Arduino compatibility.
 void loop() { // LOOP
 
-  uint8_t *display_buf = (uint8_t *) malloc(RX_INPUT_SIZE);
-
-  bzero(display_buf, RX_INPUT_SIZE);
-
-  int len = uart_read_bytes(UART_PORT_NUM, display_buf, RX_INPUT_SIZE, 1000 / portTICK_PERIOD_MS);
+  uint8_t *data = (uint8_t *) malloc(RX_INPUT_SIZE);
+  bzero(data, RX_INPUT_SIZE);
+  
+  //char value;
+  int len = uart_read_bytes(UART_PORT_NUM, data, RX_INPUT_SIZE, 1000 / portTICK_PERIOD_MS);
 
   if (len > 0) {
-    gpio_set_level(LED_PIN, 1);
-    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    // se manda mas adelante el caracter del label asi q esto no va xd
+    //uart_send_data((const char *) data); // se envia de vuelta pero no estoy seguro si vamos a hacerlo asi asi q borrar a lo maldito por ultimo
+
+    //gpio_set_level(LED_PIN, 1);
+    char value = data[0];
+    
+    printf("data: %s", data);
+    printf("value: %c", value);
+    
+    if (value == 'D') // de Deactive; solo comparo el primer indice pq el tutorial hacia eso xd
+    {
+      vTaskDelay(pdMS_TO_TICKS(2000)); // de dos segundos
+    } 
+    
+    else {
+      if (value == 'A') // de Active; cuando se recibe, se sigue con el funcionamiento normal de Loop
+      {
+        MicroPrintf("ermmmm activado recibido");
+      }
+    } 
   }
-  else {
-    gpio_set_level(LED_PIN, 0);
+  else { // si no recibe nada, no se deberia seguir con el loop
+    return;
   }
 
   // Get image from provider.
@@ -210,30 +230,15 @@ void loop() { // LOOP
   float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
   int max_index = RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
-
-  // Guardar la clasificación más alta en detected_gestures
-  strcpy(detected_gestures[inference_count], kCategoryLabels[max_index]);
-  //detected_scores[inference_count] = scores[max_index];
-
-  inference_count++;
-
-  // Si hemos llegado a 4 inferencias, determinar el gesto prevalente
-  if (inference_count == NUM_INFERENCES) {
-    
-    MicroPrintf("se llego a 4 gestos!!");
-    for (int i = 0; i < NUM_INFERENCES; i++) {
-      //MicroPrintf("Gesto: %s, Score: %d", detected_gestures[i], detected_scores[i]);
-      MicroPrintf("Gesto [%d]: %s", i + 1, detected_gestures[i]);
-    }
-    determine_prevalent_gesture();
-    
-    inference_count = 0; // Resetear el contador para la próxima ronda de inferencias
-  }
-
+  //RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
+  
+  uart_send_data(kCategoryLabels[max_index]); // Send the detected gesture via UART
+  
   // Aquí puedes agregar el código para encender el LED
   // gpio_set_level(LED_PIN, 1); // Encender el LED
   vTaskDelay(pdMS_TO_TICKS(10)); // Espera 1000 ms (1 segundo)
   // gpio_set_level(LED_PIN, 0); // Apagar el LED
+  
 }
 #endif
 
@@ -319,6 +324,7 @@ void run_inference(void *ptr) {
 
 }
 
+/*
 void determine_prevalent_gesture() {
   int counts[NUM_INFERENCES] = {0};
   const char* prevalent_gesture = "blank";
@@ -342,3 +348,4 @@ void determine_prevalent_gesture() {
   MicroPrintf("Gesto prevalente: %s\n", prevalent_gesture);
   //uart_send_data(prevalent_gesture);
 }
+*/

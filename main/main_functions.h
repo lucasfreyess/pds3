@@ -31,7 +31,7 @@ void setup();
 void loop();
 
 //ermmm nose si va aca la vd pero porsiacaso//..
-void determine_prevalent_gesture();
+//void determine_prevalent_gesture();
 
 #ifdef __cplusplus
 }
