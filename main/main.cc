@@ -35,6 +35,7 @@ void tf_main(void) {
     vTaskDelay(portMAX_DELAY);
   #else
     while (true) {
+      
       loop();
     }
   #endif

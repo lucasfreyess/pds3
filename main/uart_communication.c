@@ -3,29 +3,30 @@
 #include "esp_log.h"
 #include "string.h"
 
-#define TX_PIN 17
-#define RX_PIN 16
+
+#define TX_PIN 12
+#define RX_PIN 13
 #define UART_PORT_NUM UART_NUM_2
 #define BUF_SIZE 1024
 
 void uart_init() {
     const uart_config_t uart_config = {
-        .baud_rate = 115200,
+        .baud_rate = 9600,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT,
     };
     uart_param_config(UART_PORT_NUM, &uart_config);
     uart_set_pin(UART_PORT_NUM, TX_PIN, RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    
-    if (uart_is_driver_installed(UART_PORT_NUM)) {
-        ESP_LOGI("UART", "UART driver is already installed.");
-    } else {
-        ESP_LOGI("UART", "UART driver is not installed.");
-    }
-    
-    uart_driver_install(UART_PORT_NUM, BUF_SIZE * 2, 0, 0, NULL, 0);
+
+    if (uart_is_driver_installed(UART_PORT_NUM)) {ESP_LOGI("UART", "UART driver is already installed.");}
+    else {ESP_LOGI("UART", "UART driver is not installed.");}
+
+    uart_driver_install(UART_PORT_NUM, BUF_SIZE, BUF_SIZE, 0, NULL, 0);
+
+    ESP_LOGI("UART", "UART initialized.");
 }
 
 void uart_send_data(const char* data) {

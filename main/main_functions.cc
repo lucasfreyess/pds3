@@ -28,6 +28,7 @@ limitations under the License.
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "driver/uart.h"
 #include "sdkconfig.h"
 #include "esp_log.h"
 
@@ -40,6 +41,9 @@ limitations under the License.
 #include <stdio.h>
 
 #define LED_PIN GPIO_NUM_4
+#define TX_OUTPUT_SIZE 1024
+#define RX_INPUT_SIZE 1024
+#define UART_PORT_NUM UART_NUM_2
 
 // #include "esp_psram.h"
 
@@ -68,7 +72,10 @@ namespace {
 }  // namespace
 
 // The name of this function is important for Arduino compatibility.
-void setup() {
+void setup() { // SETUP
+
+  ESP_LOGI("SETUP", "Starting setup");
+
   // if (esp_psram_get_size() == 0) {
   //   printf("PSRAM not found\n");
   //   return;
@@ -154,7 +161,22 @@ void setup() {
 
 #ifndef CLI_ONLY_INFERENCE
 // The name of this function is important for Arduino compatibility.
-void loop() {
+void loop() { // LOOP
+
+  uint8_t *display_buf = (uint8_t *) malloc(RX_INPUT_SIZE);
+
+  bzero(display_buf, RX_INPUT_SIZE);
+
+  int len = uart_read_bytes(UART_PORT_NUM, display_buf, RX_INPUT_SIZE, 1000 / portTICK_PERIOD_MS);
+
+  if (len > 0) {
+    gpio_set_level(LED_PIN, 1);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+  else {
+    gpio_set_level(LED_PIN, 0);
+  }
+
   // Get image from provider.
   if (kTfLiteOk != GetImage(kNumCols, kNumRows, kNumChannels, input->data.uint8)) {
     MicroPrintf("Image capture failed.");
