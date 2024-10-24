@@ -60,7 +60,7 @@ static void create_gui(void)
 }
 #endif // DISPLAY_SUPPORT
 
-void RespondToDetection(float k1_score, float k10_score, float k2_score, float k3_score, float k4_score, float k5_score, float kBlank_score) {
+int RespondToDetection(float k1_score, float k10_score, float k2_score, float k3_score, float k4_score, float k5_score, float kBlank_score) {
   
   int k1_score_int = (k1_score) * 100 + 0.5;
   int k10_score_int = (k10_score) * 100 + 0.5;
@@ -84,4 +84,5 @@ void RespondToDetection(float k1_score, float k10_score, float k2_score, float k
   MicroPrintf("SCORES:\n     1: %d%% (%f%%)\n    10: %d%% (%f%%)\n     2: %d%% (%f%%)\n     3: %d%% (%f%%)\n     4: %d%% (%f%%)\n     5: %d%% (%f%%)\n Blank: %d%% (%f%%)\n\n",
               k1_score_int, k1_score, k10_score_int, k10_score, k2_score_int, k2_score, k3_score_int, k3_score, k4_score_int, k4_score, k5_score_int, k5_score, kBlank_score_int, kBlank_score);
 
+  return max_index;
 }

@@ -3,7 +3,6 @@
 #include "esp_log.h"
 #include "string.h"
 
-
 #define TX_PIN 12
 #define RX_PIN 13
 #define UART_PORT_NUM UART_NUM_2

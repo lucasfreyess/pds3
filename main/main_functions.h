@@ -30,6 +30,9 @@ void setup();
 // compatibility.
 void loop();
 
+//ermmm nose si va aca la vd pero porsiacaso//..
+void determine_prevalent_gesture();
+
 #ifdef __cplusplus
 }
 #endif
