@@ -7,7 +7,7 @@ extern "C" {
 
 void uart_init(void);
 void uart_send_data(const char* data);
-void uart_receive_data(void);
+int uart_receive_data(void);
 
 #ifdef __cplusplus
 }

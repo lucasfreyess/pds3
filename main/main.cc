@@ -13,30 +13,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include "tensorflow/lite/micro/micro_log.h"
 #include "main_functions.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "uart_communication.h"
-
 #include "esp_main.h"
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "sdkconfig.h"
 
 #if CLI_ONLY_INFERENCE
   #include "esp_cli.h"
 #endif
 
 void tf_main(void) {
+  int activated = 0;
 
   setup();  
-  //uart_init();
+  uart_init();
   #if CLI_ONLY_INFERENCE
     esp_cli_start();
     vTaskDelay(portMAX_DELAY);
   #else
     while (true) {
-      
-      loop();
+      if (activated == 0) {
+        activated = uart_receive_data();
+      }
+      else {
+        MicroPrintf("Activated (iter %d)", activated);
+        loop();
+        activated--;
+      }
     }
   #endif
 }

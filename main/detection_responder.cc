@@ -60,20 +60,20 @@ static void create_gui(void)
 }
 #endif // DISPLAY_SUPPORT
 
-int RespondToDetection(float k1_score, float k10_score, float k2_score, float k3_score, float k4_score, float k5_score, float kBlank_score) {
+int RespondToDetection(float k1_score, float k2_score, float k3_score, float k4_score, float k5_score, float k7_score, float kBlank_score) {
   
   int k1_score_int = (k1_score) * 100 + 0.5;
-  int k10_score_int = (k10_score) * 100 + 0.5;
   int k2_score_int = (k2_score) * 100 + 0.5;
   int k3_score_int = (k3_score) * 100 + 0.5;
   int k4_score_int = (k4_score) * 100 + 0.5;
   int k5_score_int = (k5_score) * 100 + 0.5;
+  int k7_score_int = (k7_score) * 100 + 0.5;
   int kBlank_score_int = (kBlank_score) * 100 + 0.5;
 
   int max_score = k1_score_int;
-  int max_index = 1;
-  int scores[kCategoryCount] = {k1_score_int, k10_score_int, k2_score_int, k3_score_int, k4_score_int, k5_score_int, kBlank_score_int};
-  for (int i = 1; i < kCategoryCount; i++) {
+  int max_index = 0;
+  int scores[kCategoryCount] = {k1_score_int, k2_score_int, k3_score_int, k4_score_int, k5_score_int, k7_score_int, kBlank_score_int};
+  for (int i = 0; i < kCategoryCount; i++) {
     if (scores[i] > max_score) {
       max_score = scores[i];
       max_index = i;
@@ -81,8 +81,8 @@ int RespondToDetection(float k1_score, float k10_score, float k2_score, float k3
   }
   
   MicroPrintf("MAX SCORE: %d%% (Class: %s)", max_score, kCategoryLabels[max_index]);
-  MicroPrintf("SCORES:\n     1: %d%% (%f%%)\n    10: %d%% (%f%%)\n     2: %d%% (%f%%)\n     3: %d%% (%f%%)\n     4: %d%% (%f%%)\n     5: %d%% (%f%%)\n Blank: %d%% (%f%%)\n\n",
-              k1_score_int, k1_score, k10_score_int, k10_score, k2_score_int, k2_score, k3_score_int, k3_score, k4_score_int, k4_score, k5_score_int, k5_score, kBlank_score_int, kBlank_score);
+  MicroPrintf("SCORES:\n     1: %d%% (%f%%)\n     2: %d%% (%f%%)\n     3: %d%% (%f%%)\n     4: %d%% (%f%%)\n     5: %d%% (%f%%)\n     7: %d%% (%f%%)\n Blank: %d%% (%f%%)\n\n",
+              k1_score_int, k1_score, k2_score_int, k2_score, k3_score_int, k3_score, k4_score_int, k4_score, k5_score_int, k5_score, k7_score_int, k7_score, kBlank_score_int, kBlank_score);
 
   return max_index;
 }

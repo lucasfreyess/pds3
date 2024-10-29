@@ -32,10 +32,12 @@ void uart_send_data(const char* data) {
     uart_write_bytes(UART_PORT_NUM, data, strlen(data));
 }
 
-void uart_receive_data() {
+int uart_receive_data() {
     uint8_t data[BUF_SIZE];
     int len = uart_read_bytes(UART_PORT_NUM, data, BUF_SIZE, 20 / portTICK_PERIOD_MS);
     if (len > 0) {
         ESP_LOGI("UART_RX", "Received data: %s", data);
+        return 5;
     }
+    return 0;
 }

@@ -29,11 +29,11 @@ constexpr int kMaxImageSize = kNumCols * kNumRows * kNumChannels;
 
 constexpr int kCategoryCount = 7;
 constexpr int k1Index = 0;
-constexpr int k10Index = 1;
-constexpr int k2Index = 2;
-constexpr int k3Index = 3;
-constexpr int k4Index = 4;
-constexpr int k5Index = 5;
+constexpr int k2Index = 1;
+constexpr int k3Index = 2;
+constexpr int k4Index = 3;
+constexpr int k5Index = 4;
+constexpr int k7Index = 5;
 constexpr int kBlankIndex = 6;
 
 extern const char* kCategoryLabels[kCategoryCount];

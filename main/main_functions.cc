@@ -19,12 +19,12 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_log.h"
 #include "person_detect_model_data.h"
 #include "detection_responder.h"
+#include "uart_communication.h"
 #include "main_functions.h"
 #include "image_provider.h"
 #include "model_settings.h"
 #include "esp_main.h"
 
-#include "uart_communication.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -44,10 +44,10 @@ limitations under the License.
 #define TX_OUTPUT_SIZE 1024
 #define RX_INPUT_SIZE 1024
 #define UART_PORT_NUM UART_NUM_2
-#define NUM_INFERENCES 4
+#define NUM_INFERENCES 5
 
 int inference_count = 0;
-char detected_gestures[NUM_INFERENCES][20]; // almacena los labels de las detecciones mas prevalentes
+int detected_gestures[NUM_INFERENCES]; // almacena los labels de las detecciones mas prevalentes
 //int detected_scores[NUM_INFERENCES];        // almacena los scores correspondientes
 
 // Globals, used for compatibility with Arduino-style sketches.
@@ -73,6 +73,32 @@ namespace {
     constexpr int kTensorArenaSize = (96 * 96 * sizeof(uint)) + 330000;
     static uint8_t *tensor_arena;//[kTensorArenaSize]; // Maybe we should move this to external
 }  // namespace
+
+void determine_prevalent_gesture() {
+  int counts[7] = {0, 0, 0, 0, 0, 0, 0};
+  int prevalent_gesture = 6;
+  int max_count = 0;
+
+  // se cuentan las ocurrencias de cada gesto
+  for (int i = 0; i < NUM_INFERENCES; i++) {
+    counts[detected_gestures[i]]++;
+  }
+
+  // se determina el gesto mas prevalente
+  for (int i = 0; i < NUM_INFERENCES - 1; i++) {
+    if (counts[i] > max_count) {
+      max_count = counts[i];
+      prevalent_gesture = i;
+    }
+  }
+
+  MicroPrintf("detected_gestures: %d, %d, %d, %d, %d", detected_gestures[0], detected_gestures[1], detected_gestures[2], detected_gestures[3], detected_gestures[4]);
+  MicroPrintf("Gesto prevalente: %d (%d, %d, %d, %d, %d, %d)", prevalent_gesture, counts[0], counts[1], counts[2], counts[3], counts[4], counts[5]);
+
+  char strGesture[12];
+  sprintf(strGesture, "%d", prevalent_gesture);
+  uart_send_data(strGesture);
+}
 
 // The name of this function is important for Arduino compatibility.
 void setup() { // SETUP
@@ -165,20 +191,21 @@ void setup() { // SETUP
 #ifndef CLI_ONLY_INFERENCE
 // The name of this function is important for Arduino compatibility.
 void loop() { // LOOP
+  MicroPrintf("Inference count: %d", inference_count);
 
-  uint8_t *display_buf = (uint8_t *) malloc(RX_INPUT_SIZE);
+  // uint8_t *display_buf = (uint8_t *) malloc(RX_INPUT_SIZE);
 
-  bzero(display_buf, RX_INPUT_SIZE);
+  // bzero(display_buf, RX_INPUT_SIZE);
 
-  int len = uart_read_bytes(UART_PORT_NUM, display_buf, RX_INPUT_SIZE, 1000 / portTICK_PERIOD_MS);
+  // int len = uart_read_bytes(UART_PORT_NUM, display_buf, RX_INPUT_SIZE, 1000 / portTICK_PERIOD_MS);
 
-  if (len > 0) {
-    gpio_set_level(LED_PIN, 1);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-  }
-  else {
-    gpio_set_level(LED_PIN, 0);
-  }
+  // if (len > 0) {
+  //   gpio_set_level(LED_PIN, 1);
+  //   vTaskDelay(pdMS_TO_TICKS(1000));
+  // }
+  // else {
+  //   gpio_set_level(LED_PIN, 0);
+  // }
 
   // Get image from provider.
   if (kTfLiteOk != GetImage(kNumCols, kNumRows, kNumChannels, input->data.uint8)) {
@@ -194,36 +221,36 @@ void loop() { // LOOP
   
   // Process the inference results.
   int k1_score = output->data.uint8[k1Index];
-  int k10_score = output->data.uint8[k10Index];
   int k2_score = output->data.uint8[k2Index];
   int k3_score = output->data.uint8[k3Index];
   int k4_score = output->data.uint8[k4Index];
   int k5_score = output->data.uint8[k5Index];
+  int k7_score = output->data.uint8[k7Index];
   int kBlank_score = output->data.uint8[kBlankIndex];
 
   float k1_score_f = (k1_score - output->params.zero_point) * output->params.scale;
-  float k10_score_f = (k10_score - output->params.zero_point) * output->params.scale;
   float k2_score_f = (k2_score - output->params.zero_point) * output->params.scale;
   float k3_score_f = (k3_score - output->params.zero_point) * output->params.scale;
   float k4_score_f = (k4_score - output->params.zero_point) * output->params.scale;
   float k5_score_f = (k5_score - output->params.zero_point) * output->params.scale;
+  float k7_score_f = (k7_score - output->params.zero_point) * output->params.scale;
   float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
-  int max_index = RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
+  int max_index = RespondToDetection(k1_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, k7_score_f, kBlank_score_f);
 
   // Guardar la clasificación más alta en detected_gestures
-  strcpy(detected_gestures[inference_count], kCategoryLabels[max_index]);
+  detected_gestures[inference_count] = max_index;
   //detected_scores[inference_count] = scores[max_index];
 
   inference_count++;
 
-  // Si hemos llegado a 4 inferencias, determinar el gesto prevalente
+  // Si hemos llegado a 5 inferencias, determinar el gesto prevalente
   if (inference_count == NUM_INFERENCES) {
     
-    MicroPrintf("se llego a 4 gestos!!");
     for (int i = 0; i < NUM_INFERENCES; i++) {
       //MicroPrintf("Gesto: %s, Score: %d", detected_gestures[i], detected_scores[i]);
-      MicroPrintf("Gesto [%d]: %s", i + 1, detected_gestures[i]);
+      MicroPrintf("Gesto [%d]: %d", i + 1, detected_gestures[i]);
+      
     }
     determine_prevalent_gesture();
     
@@ -299,46 +326,22 @@ void run_inference(void *ptr) {
   // RespondToDetection(person_score_f, no_person_score_f);
 
   int k1_score = output->data.uint8[k1Index];
-  int k10_score = output->data.uint8[k10Index];
   int k2_score = output->data.uint8[k2Index];
   int k3_score = output->data.uint8[k3Index];
   int k4_score = output->data.uint8[k4Index];
   int k5_score = output->data.uint8[k5Index];
+  int k7_score = output->data.uint8[k7Index];
   int kBlank_score = output->data.uint8[kBlankIndex];
 
   float k1_score_f = (k1_score - output->params.zero_point) * output->params.scale;
-  float k10_score_f = (k10_score - output->params.zero_point) * output->params.scale;
   float k2_score_f = (k2_score - output->params.zero_point) * output->params.scale;
   float k3_score_f = (k3_score - output->params.zero_point) * output->params.scale;
   float k4_score_f = (k4_score - output->params.zero_point) * output->params.scale;
   float k5_score_f = (k5_score - output->params.zero_point) * output->params.scale;
+  float k7_score_f = (k7_score - output->params.zero_point) * output->params.scale;
   float kBlank_score_f = (kBlank_score - output->params.zero_point) * output->params.scale;
 
-  RespondToDetection(k1_score_f, k10_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, kBlank_score_f);
+  RespondToDetection(k1_score_f, k2_score_f, k3_score_f, k4_score_f, k5_score_f, k7_score_f, kBlank_score_f);
   // //vTaskDelay(8000 / portTICK_PERIOD_MS); // to avoid watchdog trigger
 
-}
-
-void determine_prevalent_gesture() {
-  int counts[NUM_INFERENCES] = {0};
-  const char* prevalent_gesture = "blank";
-  int max_count = 0;
-
-  // se cuentan las ocurrencias de cada gesto
-  for (int i = 0; i < NUM_INFERENCES; i++) {
-    for (int j = 0; j < NUM_INFERENCES; j++) {
-      if (strcmp(detected_gestures[i], detected_gestures[j]) == 0) {
-        counts[i]++;
-      }
-    }
-    // determina gesto mas prevalente (excluyendo blank creo)
-    if (counts[i] > max_count && strcmp(detected_gestures[i], "blank") != 0) {
-      max_count = counts[i];
-      prevalent_gesture = detected_gestures[i];
-    }
-  }
-
-  // Imprimir el gesto prevalente y enviarlo por UART
-  MicroPrintf("Gesto prevalente: %s\n", prevalent_gesture);
-  //uart_send_data(prevalent_gesture);
 }

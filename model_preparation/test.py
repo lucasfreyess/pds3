@@ -3,12 +3,12 @@ import numpy as np
 import tensorflow as tf
 
 # Cargar el modelo .h5
-model = tf.keras.models.load_model('models/benjita.keras')
+model = tf.keras.models.load_model('models/model_improved.keras')
 
 # list_of_gestures = ['1', "  10", '2', '3', '4', '5', "Blank"] # Isaías
 # list_of_gestures = ['A', 'B', "Three", "Five", "One", "Two", "Blank"] # mías v2
-# list_of_gestures = ['A', 'B', "One", "Two", "Three", "Five", "Blank"] # mías v3
-list_of_gestures = ['5', '0', '1', "2", "3", "4"] # mías v3
+list_of_gestures = ['1', '2', '3', '4', '5', '7', "Blank"] # mías v3
+list_of_gestures = ['0', '1', '2', '3', '4', '5'] # mías v3
 
 # Definir el tamaño de las imágenes que el modelo espera
 IMG_WIDTH, IMG_HEIGHT = 96, 96
